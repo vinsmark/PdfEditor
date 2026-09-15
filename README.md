@@ -1,27 +1,39 @@
-# PDF Viewer
+# Private PDF Editor
 
-A small local web application for uploading, viewing, editing, and downloading PDF files.
+A Streamlit web application for viewing, editing, and downloading PDFs. Uploaded
+and edited documents are kept only in the current Streamlit session's memory. The
+application does not write PDFs to the project directory, a database, or cloud storage.
 
-## Run
+## Features
+
+- Replace every occurrence of exact searchable text.
+- Preserve the original embedded font, size, color, opacity, and baseline when possible.
+- Add positioned text and copy styling from existing text on the same page.
+- Preview the current in-memory PDF after every edit.
+- Download the latest revision and explicitly clear it from memory.
+- Replace the previous in-memory revision after each successful edit.
+
+Scanned image-only PDFs require OCR and cannot be text-edited by this version.
+Password-protected PDFs are not supported.
+
+## Run locally
+
+Python 3.12 or newer is recommended.
 
 ```powershell
 python -m pip install -r requirements.txt
-python app.py
+streamlit run app.py
 ```
 
-Then open <http://127.0.0.1:8000> in a browser. Click **Upload PDF** and choose a
-file. Uploaded and edited files are kept in the automatically created `uploads` folder.
+Streamlit opens the app at <http://localhost:8501>.
 
-The editor can replace every occurrence of exact text or add new text at an X/Y
-position on a selected page. After applying an edit, preview the new file and use
-**Download this PDF** to save it. Replacements preserve the original embedded font
-(when reusable), size, color, opacity, baseline, and bold/italic/serif style. If a
-PDF does not include reusable font data, the editor uses the closest compatible font.
-For newly added text, fill in **Match style from existing text** with text already on
-that page (for example, `Admin Staff`) to copy its complete appearance.
+## Deploy on Streamlit Community Cloud
 
-The default upload limit is 50 MB. To use another port:
+1. Push `app.py`, `requirements.txt`, `.gitignore`, and `.streamlit/config.toml` to GitHub.
+2. Do not commit the `uploads` directory or any PDF documents.
+3. At <https://share.streamlit.io>, create an app from the repository.
+4. Select `app.py` as the entrypoint and deploy.
 
-```powershell
-python app.py --port 8080
-```
+When deployed, a PDF is transmitted to the Streamlit server and temporarily held in
+that session's RAM for processing. It is not permanently stored by this application.
+For documents that must never leave the user's device, a browser-only application is required.
