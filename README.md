@@ -8,7 +8,7 @@ application does not write PDFs to the project directory, a database, or cloud s
 
 - Replace every occurrence of exact searchable text.
 - Preserve the original embedded font, size, color, opacity, and baseline when possible.
-- Add positioned text and copy styling from existing text on the same page.
+- Add text by clicking anywhere on the visual page; styling is copied from the nearest text.
 - Click **Edit PDF** to edit detected text directly in positioned page boxes.
 - Preview the current in-memory PDF after every edit.
 - Download the latest revision and explicitly clear it from memory.

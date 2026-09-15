@@ -48,13 +48,17 @@ def reusable_font(document: fitz.Document, pdf_page: fitz.Page, style: dict) -> 
     wanted = normalized_font_name(str(style.get("font", "")))
     flags = int(style.get("flags", 0))
     wanted_bold = bool(flags & 16) or "bold" in wanted
-    candidates: list[tuple[bool, int]] = []
+    wanted_italic = bool(flags & 2) or "italic" in wanted or "oblique" in wanted
+    candidates: list[tuple[int, int]] = []
 
     for font in pdf_page.get_fonts(full=True):
         xref, _extension, _font_type, base_name = font[:4]
         normalized = normalized_font_name(base_name)
         if normalized == wanted or normalized.startswith(wanted) or wanted.startswith(normalized):
-            candidates.append((("bold" in normalized) == wanted_bold, xref))
+            candidate_bold = "bold" in normalized
+            candidate_italic = "italic" in normalized or "oblique" in normalized
+            score = int(candidate_bold == wanted_bold) + int(candidate_italic == wanted_italic)
+            candidates.append((score, xref))
 
     for _style_matches, xref in sorted(candidates, reverse=True):
         try:
@@ -255,14 +259,14 @@ def visual_page_data(source_bytes: bytes, page_number: int) -> dict:
         document.close()
 
 
-def apply_visual_edits(source_bytes: bytes, page_number: int, edits: list[dict]) -> tuple[bytes, int]:
-    """Apply changed visual-editor spans while preserving their PDF styles."""
+def apply_visual_edits(source_bytes: bytes, page_number: int, payload: dict) -> tuple[bytes, int]:
+    """Apply changed spans and manually placed text with inherited PDF styles."""
     document = fitz.open(stream=source_bytes, filetype="pdf")
     try:
         pdf_page = document[page_number - 1]
         records = {record["id"]: record for record in page_text_boxes(pdf_page)}
         pending = []
-        for edit in edits:
+        for edit in payload.get("changes", []):
             record = records.get(str(edit.get("id", "")))
             if record is None:
                 continue
@@ -273,9 +277,33 @@ def apply_visual_edits(source_bytes: bytes, page_number: int, edits: list[dict])
             pending.append((record, new_text, reusable_font(document, pdf_page, style)))
             pdf_page.add_redact_annot(record["rect"], fill=None)
 
-        if not pending:
-            raise ValueError("No text boxes were changed.")
-        pdf_page.apply_redactions(images=0, graphics=0)
+        additions = []
+        for addition in payload.get("additions", []):
+            reference = records.get(str(addition.get("reference", "")))
+            text = str(addition.get("text", "")).strip()
+            if reference is None or not text:
+                continue
+            style = dict(reference["style"])
+            style["size"] = max(4.0, min(96.0, float(addition.get("size", style.get("size", 12)))))
+            color_value = str(addition.get("color", f'#{int(style.get("color", 0)):06x}'))
+            if re.fullmatch(r"#[0-9a-fA-F]{6}", color_value):
+                style["color"] = int(color_value[1:], 16)
+            flags = int(style.get("flags", 0))
+            flags = flags | 16 if addition.get("bold") else flags & ~16
+            flags = flags | 2 if addition.get("italic") else flags & ~2
+            style["flags"] = flags
+            baseline_offset = float(style.get("origin", (0, reference["rect"].y1))[1]) - reference["rect"].y0
+            additions.append((
+                (float(addition["x"]), float(addition["y"]) + baseline_offset),
+                text,
+                style,
+                reusable_font(document, pdf_page, style),
+            ))
+
+        if not pending and not additions:
+            raise ValueError("No text was changed or added.")
+        if pending:
+            pdf_page.apply_redactions(images=0, graphics=0)
         for record, new_text, font in pending:
             style = record["style"]
             origin = style.get("origin", (record["rect"].x0, record["rect"].y1))
@@ -288,7 +316,17 @@ def apply_visual_edits(source_bytes: bytes, page_number: int, edits: list[dict])
                 pdf_color(int(style.get("color", 0))),
                 float(style.get("alpha", 255)) / 255,
             )
-        return document.tobytes(garbage=4, deflate=True), len(pending)
+        for point, text, style, font in additions:
+            write_styled_text(
+                pdf_page,
+                point,
+                text,
+                font,
+                float(style.get("size", 12)),
+                pdf_color(int(style.get("color", 0))),
+                float(style.get("alpha", 255)) / 255,
+            )
+        return document.tobytes(garbage=4, deflate=True), len(pending) + len(additions)
     finally:
         document.close()
 
@@ -416,38 +454,6 @@ if st.session_state.get("visual_editing"):
     except Exception as error:
         st.error(f"Could not open the visual editor: {error}")
 
-    with st.expander("Add new text by position"):
-        with st.form("add_text_form"):
-            overlay = st.text_area("Text to add", height=60)
-            style_reference = st.text_input(
-                "Match style from existing text",
-                placeholder="Example: Admin Staff",
-            )
-            position_a, position_b, position_c = st.columns(3)
-            x = position_a.number_input("X", min_value=0.0, value=72.0, step=1.0)
-            y = position_b.number_input("Y", min_value=0.0, value=72.0, step=1.0)
-            font_size = position_c.number_input(
-                "Fallback size", min_value=4.0, max_value=96.0, value=12.0, step=1.0
-            )
-            add_text = st.form_submit_button("Add text", type="primary")
-        if add_text:
-            try:
-                updated_bytes, _count = edit_pdf(
-                    st.session_state.pdf_bytes,
-                    "",
-                    "",
-                    overlay,
-                    style_reference,
-                    int(page_number),
-                    float(x),
-                    float(y),
-                    float(font_size),
-                )
-                st.session_state.pdf_bytes = updated_bytes
-                st.session_state.revision += 1
-                st.rerun()
-            except Exception as error:
-                st.error(f"Could not add text: {error}")
 else:
     st.subheader(current_name)
     st.pdf(st.session_state.pdf_bytes, height=1000)
