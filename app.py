@@ -339,16 +339,255 @@ def clear_document() -> None:
 
 
 st.set_page_config(page_title="Private PDF Editor", page_icon="📄", layout="wide")
+
 st.markdown(
     """
     <style>
-      .block-container { max-width: 100%; padding: 1rem 1.25rem 2rem; }
-      .privacy-note { padding: .7rem 1rem; border-radius: .5rem; background: rgba(30,120,80,.12);
-                      border: 1px solid rgba(50,160,110,.35); }
-      #MainMenu, [data-testid="stToolbar"], [data-testid="stDecoration"],
-      [data-testid="stStatusWidget"] { display: none !important; }
-      [data-testid="stForm"] { padding: .75rem; }
-      [data-testid="stForm"] h3 { margin-top: .25rem; }
+
+    :root {
+        --black: #111111;
+        --text: #16181c;
+        --muted: #52565c;
+        --border: #d6d6d6;
+        --background: #f7f7f7;
+        --white: #ffffff;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    html, body, [data-testid="stAppViewContainer"] {
+        background: var(--background);
+    }
+
+    body {
+        color: var(--text);
+    }
+
+    #MainMenu, [data-testid="stToolbar"], [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"], .stDeployButton, footer {
+        display: none !important;
+    }
+
+    .block-container {
+        max-width: 1450px !important;
+        padding: 32px 42px 50px !important;
+    }
+
+    /* Header */
+
+    .app-title {
+        color: #111111 !important;
+        font-size: 22px !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.35px;
+        margin-bottom: 8px;
+    }
+
+    .privacy-note {
+        padding: 10px 14px;
+        border-radius: 6px;
+        background: #f2f2f2;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 12.5px;
+        font-weight: 500;
+        margin-bottom: 22px;
+    }
+
+    /* Preview / control cards */
+
+    .st-key-preview_card {
+        background: #eeeeee !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 7px !important;
+        min-height: 880px;
+        padding: 20px !important;
+    }
+
+    .st-key-control_card {
+        background: var(--white) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 7px !important;
+        padding: 28px !important;
+        min-height: 880px;
+    }
+
+    .control-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #111111;
+        margin-bottom: 16px;
+    }
+
+    .file-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #2c2f34;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        word-break: break-word;
+    }
+
+    .divider {
+        width: 100%;
+        height: 1px;
+        background: #e0e0e0;
+        margin: 18px 0;
+    }
+
+    .success-message {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border: 1px solid #c9c9c9;
+        border-radius: 6px;
+        background: #f2f2f2;
+        font-size: 13px;
+        font-weight: 500;
+        color: #111111;
+    }
+
+    /* Buttons: black and white only, no red or teal accents */
+
+    .stButton > button,
+    .stDownloadButton > button {
+        min-height: 50px !important;
+        border-radius: 6px !important;
+        font-size: 14.5px !important;
+        font-weight: 600 !important;
+        box-shadow: none !important;
+        transition: 0.15s ease;
+        width: 100%;
+    }
+
+    .stButton > button[kind="primary"] {
+        background: #111111 !important;
+        color: #ffffff !important;
+        border: 1px solid #111111 !important;
+    }
+
+    .stButton > button[kind="primary"]:hover {
+        background: #303030 !important;
+        border-color: #303030 !important;
+        color: #ffffff !important;
+    }
+
+    .stButton > button[kind="secondary"] {
+        background: #ffffff !important;
+        color: #111111 !important;
+        border: 1px solid #111111 !important;
+    }
+
+    .stButton > button[kind="secondary"]:hover {
+        background: #f2f2f2 !important;
+        color: #111111 !important;
+    }
+
+    .stDownloadButton > button {
+        background: #ffffff !important;
+        color: #111111 !important;
+        border: 1.5px solid #111111 !important;
+    }
+
+    .stDownloadButton > button:hover {
+        background: #111111 !important;
+        color: #ffffff !important;
+    }
+
+    /* Number input (page selector) */
+
+    [data-testid="stNumberInput"] input {
+        border-radius: 6px !important;
+        border: 1px solid #b8b8b8 !important;
+        background: white !important;
+        color: #111111 !important;
+        font-weight: 600 !important;
+    }
+
+    /* File uploader */
+
+    [data-testid="stFileUploaderDropzone"] {
+        border: 1px solid #cfcfcf !important;
+        border-radius: 6px !important;
+        background: #fafafa !important;
+    }
+
+    [data-testid="stFileUploaderDropzone"]:hover {
+        border-color: #9a9a9a !important;
+        background: #f5f5f5 !important;
+    }
+
+    [data-testid="stFileUploaderDropzoneInstructions"],
+    [data-testid="stFileUploaderDropzone"]:hover [data-testid="stFileUploaderDropzoneInstructions"] {
+        color: #4a4a4a !important;
+        font-weight: 500 !important;
+    }
+
+    [data-testid="stFileUploaderDropzoneInstructions"] * {
+        color: inherit !important;
+    }
+
+    [data-testid="stFileUploaderDropzone"] svg {
+        color: #4a4a4a !important;
+        fill: #4a4a4a !important;
+    }
+
+    [data-testid="stFileUploaderDropzone"] button {
+        color: #111111 !important;
+        background: #ffffff !important;
+        border: 1px solid #111111 !important;
+    }
+
+    [data-testid="stFileUploaderDropzone"] button:hover {
+        color: #111111 !important;
+        background: #f2f2f2 !important;
+        border-color: #111111 !important;
+    }
+
+    *:focus-visible {
+        outline-color: #111111 !important;
+    }
+
+    /* Mobile responsiveness */
+
+    @media (max-width: 950px) {
+
+        .block-container {
+            padding: 22px 18px 35px !important;
+        }
+
+        .st-key-preview_card {
+            min-height: 560px;
+        }
+
+        .st-key-control_card {
+            margin-top: 18px;
+            min-height: 0;
+        }
+    }
+
+    @media (max-width: 600px) {
+
+        .block-container {
+            padding: 16px 12px 25px !important;
+        }
+
+        .app-title {
+            font-size: 19px !important;
+        }
+
+        .st-key-preview_card {
+            min-height: 420px;
+            border-radius: 6px;
+            padding: 10px !important;
+        }
+
+        .st-key-control_card {
+            padding: 16px !important;
+        }
+    }
+
     </style>
     """,
     unsafe_allow_html=True,
@@ -357,7 +596,7 @@ st.markdown(
 if "uploader_version" not in st.session_state:
     st.session_state.uploader_version = 0
 
-st.title("Private PDF Editor")
+st.markdown('<div class="app-title">Private PDF Editor</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="privacy-note">PDFs are processed in this session\'s memory. '
     "This app does not write uploaded or edited PDFs to disk.</div>",
@@ -394,66 +633,115 @@ if uploaded is not None:
                 st.error(f"Could not open PDF: {error}")
 
 if "pdf_bytes" not in st.session_state:
-    st.info("Choose a PDF above to start editing. No file will be saved to the project folder.")
+    st.markdown(
+        '<div class="privacy-note">Choose a PDF above to start editing. '
+        "No file will be saved to the project folder.</div>",
+        unsafe_allow_html=True,
+    )
     st.stop()
 
 edit_notice = st.session_state.pop("edit_notice", None)
-if edit_notice:
-    st.success(edit_notice)
 
 current_name = st.session_state.pdf_name
 document_probe = fitz.open(stream=st.session_state.pdf_bytes, filetype="pdf")
 page_count = document_probe.page_count
 document_probe.close()
 
-action_edit, action_download, action_clear, action_space = st.columns([1, 1.25, 1.15, 5])
-with action_edit:
-    edit_label = "Close editor" if st.session_state.get("visual_editing") else "Edit PDF"
-    if st.button(edit_label, type="primary", use_container_width=True):
-        st.session_state.visual_editing = not st.session_state.get("visual_editing", False)
-        st.rerun()
-with action_download:
-    st.download_button(
-        "Download PDF",
-        data=st.session_state.pdf_bytes,
-        file_name=f"edited_{Path(current_name).stem}.pdf",
-        mime="application/pdf",
-        use_container_width=True,
-    )
-with action_clear:
-    if st.button("Clear PDF", use_container_width=True):
-        clear_document()
-        st.rerun()
+# The page selector lives in the right-hand control card, but the editor in
+# the left column needs its value first, so it is read from session state
+# here and clamped to the current document.
+st.session_state.page_to_edit_input = max(
+    1, min(int(st.session_state.get("page_to_edit_input", 1)), page_count)
+)
+page_number = int(st.session_state.page_to_edit_input)
+visual_editing = st.session_state.get("visual_editing", False)
 
-if st.session_state.get("visual_editing"):
-    page_number = st.number_input(
-        "Page to edit", min_value=1, max_value=page_count, value=1, step=1, width=180
-    )
-    try:
-        editor_data = visual_page_data(st.session_state.pdf_bytes, int(page_number))
-        component_key = f"visual_editor_{st.session_state.revision}_{int(page_number)}"
-        result = visual_editor(
-            editor_data,
-            key=component_key,
-        )
-        edits_payload = getattr(result, "edits", "")
-        if not edits_payload:
-            component_state = st.session_state.get(component_key, {})
-            edits_payload = component_state.get("edits", "") if component_state else ""
-        if edits_payload:
-            visual_edits = json.loads(edits_payload)
-            updated_bytes, changed_count = apply_visual_edits(
-                st.session_state.pdf_bytes, int(page_number), visual_edits
-            )
-            st.session_state.pdf_bytes = updated_bytes
-            st.session_state.revision += 1
-            st.session_state.edit_notice = (
-                f"Saved {changed_count} text-box change(s) in memory. The download is now updated."
-            )
+
+# ============================================================
+# TWO-COLUMN WORKSPACE
+# LEFT  = PDF PREVIEW (component runs here)
+# RIGHT = DOCUMENT CONTROLS
+#
+# Column position is fixed by the order st.columns() is called,
+# regardless of which `with` block runs first below.
+# ============================================================
+
+left_column, right_column = st.columns([2.9, 1.2], gap="large")
+
+with left_column:
+
+    with st.container(border=True, key="preview_card"):
+
+        if visual_editing:
+            try:
+                editor_data = visual_page_data(st.session_state.pdf_bytes, page_number)
+                component_key = f"visual_editor_{st.session_state.revision}_{page_number}"
+                result = visual_editor(
+                    editor_data,
+                    key=component_key,
+                )
+                edits_payload = getattr(result, "edits", "")
+                if not edits_payload:
+                    component_state = st.session_state.get(component_key, {})
+                    edits_payload = component_state.get("edits", "") if component_state else ""
+                if edits_payload:
+                    visual_edits = json.loads(edits_payload)
+                    updated_bytes, changed_count = apply_visual_edits(
+                        st.session_state.pdf_bytes, page_number, visual_edits
+                    )
+                    st.session_state.pdf_bytes = updated_bytes
+                    st.session_state.revision += 1
+                    st.session_state.edit_notice = (
+                        f"Saved {changed_count} text-box change(s) in memory. "
+                        "The download is now updated."
+                    )
+                    st.rerun()
+            except Exception as error:
+                st.error(f"Could not open the visual editor: {error}")
+        else:
+            st.pdf(st.session_state.pdf_bytes, height=1000)
+
+with right_column:
+
+    with st.container(border=True, key="control_card"):
+
+        st.markdown('<div class="control-title">Document</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="file-name">{current_name}</div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+
+        edit_label = "Close editor" if visual_editing else "Edit PDF"
+        if st.button(edit_label, type="primary", use_container_width=True, key="toggle_edit"):
+            st.session_state.visual_editing = not visual_editing
             st.rerun()
-    except Exception as error:
-        st.error(f"Could not open the visual editor: {error}")
 
-else:
-    st.subheader(current_name)
-    st.pdf(st.session_state.pdf_bytes, height=1000)
+        if visual_editing:
+            st.number_input(
+                "Page to edit",
+                min_value=1,
+                max_value=page_count,
+                step=1,
+                key="page_to_edit_input",
+            )
+
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+
+        st.download_button(
+            "Download PDF",
+            data=st.session_state.pdf_bytes,
+            file_name=f"edited_{Path(current_name).stem}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
+
+        st.markdown('<div style="height:10px;"></div>', unsafe_allow_html=True)
+
+        if st.button("Clear PDF", use_container_width=True, key="clear_pdf"):
+            clear_document()
+            st.rerun()
+
+        if edit_notice:
+            st.markdown(
+                f'<div class="success-message">{edit_notice}</div>',
+                unsafe_allow_html=True,
+            )

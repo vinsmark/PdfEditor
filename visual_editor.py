@@ -27,23 +27,35 @@ VISUAL_EDITOR_HTML = """
 
 VISUAL_EDITOR_CSS = """
 .visual-editor { width: 100%; font-family: var(--st-font); }
-.editor-help { margin-bottom: .6rem; color: var(--st-text-color); opacity: .75; font-size: .9rem; }
-.format-toolbar { position: sticky; top: 0; z-index: 30; align-items: center; justify-content: center;
-                  gap: .65rem; margin: 0 auto .65rem; width: 78%; padding: .5rem .7rem;
-                  color: var(--st-text-color); background: var(--st-secondary-background-color);
-                  border: 1px solid rgba(128,128,128,.4); border-radius: .5rem; }
+
+.editor-help { margin-bottom: .7rem; color: #16181c; opacity: .8; font-size: .9rem; font-weight: 500; }
+
+.format-toolbar { position: sticky; top: 0; z-index: 30; align-items: center; justify-content: flex-start;
+                  gap: .65rem; margin: 0 0 .7rem; width: 100%; padding: .55rem .7rem;
+                  color: #111111; background: #ffffff; flex-wrap: wrap;
+                  border: 1px solid #d6d6d6; border-radius: 6px; }
 .format-toolbar:not([hidden]) { display: flex; }
-.format-toolbar label { display: flex; align-items: center; gap: .3rem; font-size: .85rem; }
-.size-input { width: 4.5rem; padding: .3rem; }
-.color-input { width: 2.4rem; height: 2rem; padding: 0; border: 0; background: transparent; }
-.format-button { width: 2.1rem; height: 2rem; border: 1px solid rgba(128,128,128,.5);
-                 border-radius: .3rem; color: var(--st-text-color); background: transparent; cursor: pointer; }
-.format-button.active { color: white; background: var(--st-primary-color); }
-.delete-button { padding: .38rem .65rem; border: 1px solid #d94a4a; border-radius: .35rem;
-                 color: #ffb3b3; background: transparent; cursor: pointer; }
-.delete-button:hover { color: white; background: #b42323; }
-.page-stage { position: relative; width: 78%; margin: 0 auto; overflow: hidden; background: white; container-type: size;
-              border: 1px solid rgba(128,128,128,.45); box-shadow: 0 2px 12px rgba(0,0,0,.18); }
+.format-toolbar strong { font-size: .85rem; font-weight: 700; color: #111111; }
+.format-toolbar label { display: flex; align-items: center; gap: .35rem; font-size: .85rem;
+                        font-weight: 500; color: #2c2f34; }
+
+.size-input { width: 4.5rem; padding: .3rem .4rem; border: 1px solid #b8b8b8; border-radius: 6px;
+              background: #ffffff; color: #111111; font-weight: 600; }
+.color-input { width: 2.4rem; height: 2rem; padding: 0; border: 1px solid #b8b8b8; border-radius: 6px;
+               background: #ffffff; cursor: pointer; }
+
+.format-button { width: 2.1rem; height: 2rem; border: 1px solid #111111; border-radius: 6px;
+                 color: #111111; background: #ffffff; cursor: pointer; font-weight: 700; }
+.format-button:hover { background: #f2f2f2; }
+.format-button.active { color: #ffffff; background: #111111; }
+
+.delete-button { padding: .42rem .7rem; border: 1.5px solid #b3272c; border-radius: 6px;
+                 color: #b3272c; background: #ffffff; cursor: pointer;
+                 font-size: .85rem; font-weight: 600; }
+.delete-button:hover { color: #ffffff; background: #b3272c; }
+
+.page-stage { position: relative; width: 100%; margin: 0 auto; overflow: hidden; background: white;
+              container-type: size; border: 1px solid #d6d6d6; box-shadow: 0 2px 12px rgba(0,0,0,.12); }
 .page-image { display: block; width: 100%; height: auto; }
 .text-layer { position: absolute; inset: 0; }
 .pdf-box { position: absolute; min-width: 3px; min-height: 6px; margin: 0; transform-origin: left bottom; }
@@ -53,20 +65,28 @@ VISUAL_EDITOR_CSS = """
             font-style: var(--box-style); outline: none; background: transparent; cursor: text; }
 .pdf-box:hover .pdf-text, .pdf-text:focus { color: var(--box-color); outline: 1px solid #666;
                                          z-index: 10; background: white; }
-.pdf-box.changed .pdf-text { color: var(--box-color); outline: 1px solid #ff8a00; background: #fff8e8; }
+.pdf-box.changed .pdf-text { color: var(--box-color); outline: 1px solid #111111; background: #f2f2f2; }
+
 .drag-handle { position: absolute; left: -22px; top: 50%; transform: translateY(-50%); display: grid;
                place-items: center; width: 20px; height: 20px; border-radius: 50%; color: white;
-               background: #d97706; cursor: move; user-select: none; font: 700 13px sans-serif; z-index: 15; }
+               background: #404040; cursor: move; user-select: none; font: 700 13px sans-serif; z-index: 15; }
 .page-stage.add-mode { cursor: crosshair; }
+
 .editor-actions { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: .55rem;
-                  padding: .75rem 0; background: var(--st-background-color); z-index: 20; }
-.apply-button, .add-button { border: 0; border-radius: .45rem; padding: .65rem 1rem; color: white;
-                             background: var(--st-primary-color); cursor: pointer; font-weight: 600; }
-.add-button { color: var(--st-text-color); background: var(--st-secondary-background-color);
-              border: 1px solid rgba(128,128,128,.5); }
-.add-button.active { color: white; background: #d97706; }
-.apply-button:disabled { opacity: .55; cursor: default; }
-@media (max-width: 900px) { .page-stage, .format-toolbar { width: 100%; } }
+                  padding: .8rem 0 .2rem; background: #eeeeee; z-index: 20; }
+.apply-button, .add-button { min-height: 44px; border-radius: 6px; padding: .6rem 1.1rem;
+                             font-size: 14px; font-weight: 600; cursor: pointer; transition: .15s ease; }
+.apply-button { color: #ffffff; background: #111111; border: 1px solid #111111; }
+.apply-button:hover:not(:disabled) { background: #303030; border-color: #303030; }
+.add-button { color: #111111; background: #ffffff; border: 1px solid #111111; }
+.add-button:hover { background: #f2f2f2; }
+.add-button.active { color: #ffffff; background: #111111; border-color: #111111; }
+.apply-button:disabled { opacity: .5; cursor: default; }
+
+@media (max-width: 900px) {
+  .editor-actions { justify-content: stretch; }
+  .apply-button, .add-button { flex: 1; }
+}
 """
 
 VISUAL_EDITOR_JS = """
