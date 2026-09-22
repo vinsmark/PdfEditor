@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Private PDF Editor</title>
+<style>
+  :root {
+    --bg: #f7f7f7;
+    --surface: #ffffff;
+    --preview-bg: #eeeeee;
+    --border: #d6d6d6;
+    --border-strong: #b8b8b8;
+    --text: #16181c;
+    --muted: #52565c;
+    --accent: #111111;
+    --accent-contrast: #ffffff;
+    --accent-hover: #303030;
+    --danger: #b3272c;
+    --danger-contrast: #ffffff;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121214;
+      --surface: #1c1c1e;
+      --preview-bg: #202022;
+      --border: #38383a;
+      --border-strong: #4a4a4c;
+      --text: #f0f0f2;
+      --muted: #a7a7ad;
+      --accent: #f0f0f2;
+      --accent-contrast: #111111;
+      --accent-hover: #d6d6d9;
+      --danger: #ff6b6b;
+      --danger-contrast: #1c1c1e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121214;
+    --surface: #1c1c1e;
+    --preview-bg: #202022;
+    --border: #38383a;
+    --border-strong: #4a4a4c;
+    --text: #f0f0f2;
+    --muted: #a7a7ad;
+    --accent: #f0f0f2;
+    --accent-contrast: #111111;
+    --accent-hover: #d6d6d9;
+    --danger: #ff6b6b;
+    --danger-contrast: #1c1c1e;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  #app { max-width: 1450px; margin: 0 auto; padding: 28px 24px 50px; }
+
+  /* Welcome page */
+  .welcome {
+    min-height: calc(100vh - 78px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 20px;
+  }
+  .welcome-container { width: min(760px, 100%); text-align: center; }
+  .welcome-container * { margin: 0; }
+
+  .welcome-logo { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 46px; }
+  .welcome-logo-mark {
+    width: 32px; height: 36px; border: 1.5px solid var(--text); border-radius: 7px;
+    position: relative; background: var(--surface);
+  }
+  .welcome-logo-mark::before {
+    content: ""; position: absolute; width: 13px; height: 13px; right: -1px; top: -1px;
+    background: var(--surface); border-left: 1.5px solid var(--text); border-bottom: 1.5px solid var(--text);
+    border-radius: 0 7px 0 5px;
+  }
+  .welcome-logo-mark::after {
+    content: "PDF"; position: absolute; left: 0; right: 0; bottom: 6px; text-align: center;
+    font-size: 7px; font-weight: 800; letter-spacing: 1px; color: var(--text);
+  }
+  .welcome-logo-text { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+
+  .welcome-badge {
+    display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+    font-size: 11.5px; color: var(--muted); margin-bottom: 26px;
+  }
+  .welcome-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text); }
+
+  .welcome-title { font-size: clamp(38px, 7vw, 64px); line-height: .98; font-weight: 760; letter-spacing: -2.5px; margin-bottom: 22px; }
+  .welcome-title span { color: var(--muted); font-weight: 450; }
+
+  .welcome-description { max-width: 520px; margin: 0 auto 30px; color: var(--muted); font-size: 15px; line-height: 1.7; }
+
+  .welcome-cta {
+    border: none; background: var(--accent); color: var(--accent-contrast); height: 48px; padding: 0 24px;
+    border-radius: 10px; font-size: 13.5px; font-weight: 650; display: inline-flex; align-items: center;
+    justify-content: center; gap: 9px; box-shadow: 0 1px 1px rgba(0,0,0,.1), 0 8px 20px rgba(0,0,0,.08);
+    transition: transform .2s ease, box-shadow .2s ease, background .2s ease; cursor: pointer;
+  }
+  .welcome-cta:hover { transform: translateY(-2px); background: var(--accent-hover); }
+  .welcome-cta:active { transform: translateY(0); }
+  .welcome-cta svg { width: 15px; height: 15px; }
+
+  .welcome-preview { margin: 52px auto 0; width: min(680px, 100%); display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .welcome-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px 16px; text-align: left; transition: .2s ease; }
+  .welcome-card:hover { transform: translateY(-3px); border-color: var(--border-strong); }
+  .welcome-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px !important; }
+  .welcome-card-number { font-size: 10px; color: var(--muted); font-weight: 700; letter-spacing: 1px; }
+  .welcome-card-icon { width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: var(--text); }
+  .welcome-card-icon svg { width: 13px; height: 13px; }
+  .welcome-card h3 { font-size: 12.5px; margin-bottom: 4px !important; }
+  .welcome-card p { font-size: 11px; line-height: 1.55; color: var(--muted); }
+
+  .welcome-footer { margin-top: 36px; font-size: 11px; color: var(--muted); }
+
+  @media (max-width: 800px) {
+    .welcome-preview { grid-template-columns: 1fr; max-width: 380px; }
+    .welcome-logo { margin-bottom: 34px; }
+  }
+  @media (max-width: 520px) {
+    .welcome-title { letter-spacing: -1.5px; }
+    .welcome-description { font-size: 13.5px; }
+    .welcome-preview { margin-top: 36px; }
+  }
+
+  .app-title { font-size: 22px; font-weight: 700; letter-spacing: -0.35px; margin-bottom: 8px; }
+  .privacy-note {
+    padding: 10px 14px; border-radius: 6px; background: var(--preview-bg);
+    border: 1px solid var(--border); color: var(--muted); font-size: 12.5px;
+    font-weight: 500; margin-bottom: 22px;
+  }
+  .error-message {
+    margin-top: 12px; padding: 10px 12px; border: 1px solid var(--danger);
+    border-radius: 6px; background: var(--surface); font-size: 13px; font-weight: 500; color: var(--danger);
+  }
+  .success-message {
+    margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 6px; background: var(--preview-bg); font-size: 13px; font-weight: 500; color: var(--text);
+  }
+
+  /* Uploader */
+  .uploader { max-width: 640px; margin: 40px auto 0; }
+  .dropzone {
+    border: 1px dashed var(--border-strong); border-radius: 8px; background: var(--surface);
+    padding: 50px 24px; text-align: center; cursor: pointer; transition: .15s ease;
+  }
+  .dropzone:hover { border-color: var(--text); background: var(--preview-bg); }
+  .dropzone-icon { font-size: 34px; margin-bottom: 12px; }
+  .dropzone-hint { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+
+  /* Workspace */
+  .workspace { display: grid; grid-template-columns: 2.9fr 1.2fr; gap: 24px; align-items: start; }
+  @media (max-width: 950px) { .workspace { grid-template-columns: 1fr; } }
+
+  .preview-card {
+    background: var(--preview-bg); border: 1px solid var(--border); border-radius: 7px;
+    min-height: 480px; max-height: 70vh; padding: 14px; overflow: auto;
+  }
+  .control-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 7px;
+    padding: 16px 18px; min-height: 0; position: sticky; top: 12px;
+  }
+  @media (max-width: 950px) {
+    .preview-card { min-height: 360px; max-height: 55vh; }
+    .control-card { position: static; }
+  }
+
+  .control-title { font-size: 13.5px; font-weight: 700; margin-bottom: 8px; }
+  .file-name { font-size: 12.5px; font-weight: 500; color: var(--text); margin: 0 0 2px; word-break: break-word; }
+  .divider { width: 100%; height: 1px; background: var(--border); margin: 12px 0; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 2px; }
+  .field label { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .field input[type="text"], .field input[type="number"] {
+    width: 100%; padding: 7px 9px; border-radius: 6px; border: 1px solid var(--border-strong);
+    background: var(--surface); color: var(--text); font-weight: 500; font-size: 13px;
+  }
+  .page-count { font-size: 11.5px; color: var(--muted); margin-top: -4px; }
+
+  .btn {
+    min-height: 40px; border-radius: 6px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    width: 100%; border: 1px solid transparent; transition: .15s ease; margin-top: 6px;
+  }
+  .btn.primary { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+  .btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn.secondary { background: var(--surface); color: var(--text); border-color: var(--text); }
+  .btn.secondary:hover { background: var(--preview-bg); }
+  .btn.download { background: var(--surface); color: var(--text); border: 1.5px solid var(--text); }
+  .btn.download:hover { background: var(--accent); color: var(--accent-contrast); }
+  .btn.done { background: var(--surface); color: var(--danger); border: 1.5px solid var(--danger); }
+  .btn.done:hover { background: var(--danger); color: var(--danger-contrast); }
+  .btn:disabled { opacity: .5; cursor: default; }
+
+  /* Preview stage */
+  .editor-help { margin-bottom: 10px; color: var(--text); opacity: .8; font-size: 12.5px; font-weight: 500; }
+
+  .pages-scroll { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  .page-wrapper { width: 100%; max-width: 480px; }
+  .page-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .page-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .zoom-controls { display: flex; align-items: center; gap: 6px; }
+  .zoom-button {
+    width: 22px; height: 22px; border-radius: 5px; border: 1px solid var(--border-strong);
+    background: var(--surface); color: var(--text); font-weight: 700; font-size: 14px;
+    line-height: 1; cursor: pointer; display: grid; place-items: center;
+  }
+  .zoom-button:hover { background: var(--preview-bg); }
+  .zoom-level { font-size: 11px; font-weight: 600; color: var(--muted); min-width: 34px; text-align: center; }
+  .page-stage { position: relative; width: 100%; margin: 0 auto; background: white; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(0,0,0,.12); container-type: size; }
+  .page-stage.editable { cursor: pointer; }
+  .page-stage.active { outline: 2px solid var(--accent); outline-offset: 2px; cursor: default; }
+  .page-image { display: block; width: 100%; height: auto; max-width: 100%; }
+  .text-layer { position: absolute; inset: 0; }
+  .pdf-box { position: absolute; min-width: 3px; min-height: 6px; margin: 0; transform-origin: left bottom; }
+  .pdf-text {
+    width: 100%; height: 100%; padding: 0 1px; margin: 0; overflow: visible; white-space: pre;
+    color: transparent; line-height: 1; font-family: var(--box-family); font-size: var(--box-size);
+    font-weight: var(--box-weight); font-style: var(--box-style); outline: none; background: transparent;
+    cursor: text;
+  }
+  /* Only reveal the editable overlay box on focus (i.e. while actually
+     editing it) rather than on hover, so text that has already been
+     applied doesn't flash a white box/outline when the pointer passes
+     over it. */
+  .pdf-text:focus { color: var(--box-color); outline: 1px solid #666; z-index: 10; background: white; }
+  .pdf-box.changed .pdf-text { color: var(--box-color); outline: 1px solid #111111; background: #f2f2f2; }
+
+  /* Confirmation modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex;
+    align-items: center; justify-content: center; padding: 20px; z-index: 100;
+  }
+  .modal-card {
+    width: min(380px, 100%); background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+  }
+  .modal-title { font-size: 15px; font-weight: 700; margin: 0 0 8px; }
+  .modal-body { font-size: 13px; color: var(--muted); line-height: 1.55; margin: 0 0 18px; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions .btn { margin-top: 0; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div v-if="view === 'welcome'" class="welcome">
+    <div class="welcome-container">
+
+      <div class="welcome-logo">
+        <div class="welcome-logo-mark"></div>
+        <div class="welcome-logo-text">Private PDF Editor</div>
+      </div>
+
+      <div class="welcome-badge">
+        <span class="welcome-badge-dot"></span>
+        Runs entirely in your browser
+      </div>
+
+      <h1 class="welcome-title">Edit PDFs.<br><span>Keep it private.</span></h1>
+
+      <p class="welcome-description">
+        Open a PDF, edit the text right on the page, and download the result &mdash;
+        nothing is ever uploaded anywhere. Everything happens on this device.
+      </p>
+
+      <button type="button" class="welcome-cta" @click="view = 'app'">
+        Get started
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14"></path>
+          <path d="m13 6 6 6-6 6"></path>
+        </svg>
+      </button>
+
+      <div class="welcome-preview">
+        <div class="welcome-card">
+          <div class="welcome-card-top">
+            <span class="welcome-card-number">01</span>
+            <div class="welcome-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+              </svg>
+            </div>
+          </div>
+          <h3>Edit text</h3>
+          <p>Click directly into your PDF and change the words in place.</p>
+        </div>
+
+        <div class="welcome-card">
+          <div class="welcome-card-top">
+            <span class="welcome-card-number">02</span>
+            <div class="welcome-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M4 5h16"></path>
+                <path d="M4 12h16"></path>
+                <path d="M4 19h10"></path>
+              </svg>
+            </div>
+          </div>
+          <h3>View every page</h3>
+          <p>Scroll through the whole document and zoom each page on its own.</p>
+        </div>
+
+        <div class="welcome-card">
+          <div class="welcome-card-top">
+            <span class="welcome-card-number">03</span>
+            <div class="welcome-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M12 3v12"></path>
+                <path d="m7 10 5 5 5-5"></path>
+                <path d="M4 21h16"></path>
+              </svg>
+            </div>
+          </div>
+          <h3>Save your PDF</h3>
+          <p>Download the finished document once your changes are complete.</p>
+        </div>
+      </div>
+
+      <div class="welcome-footer">Simple PDF editing &middot; Text focused &middot; No uploads, ever</div>
+
+    </div>
+  </div>
+
+  <div v-else>
+
+  <div class="app-title">Private PDF Editor</div>
+  <div class="privacy-note">
+    Everything happens in this browser tab &mdash; the PDF is never uploaded anywhere. Editing uses
+    approximate, client-side text detection, so results are close but not pixel-perfect for every document.
+  </div>
+
+  <div v-if="!pdfLoaded" class="uploader">
+    <input type="file" accept="application/pdf,.pdf" ref="fileInput" @change="onFileChange" hidden>
+    <div class="dropzone" @click="$refs.fileInput.click()"
+         @dragover.prevent @drop.prevent="onDrop">
+      <div class="dropzone-icon">📄</div>
+      <div><strong>Click to choose a PDF</strong> or drag one here</div>
+      <div class="dropzone-hint">Up to ~50&nbsp;MB &middot; processed entirely on this device</div>
+    </div>
+    <div v-if="loadError" class="error-message">{{ loadError }}</div>
+  </div>
+
+  <div v-else class="workspace">
+
+    <div class="preview-card">
+      <div v-if="editing" class="editor-help">Click any existing text to edit it in place.</div>
+
+      <div class="pages-scroll">
+        <div v-for="entry in pageImages" :key="entry.num" class="page-wrapper" :style="{ maxWidth: (baseWidth * entry.zoom) + 'px' }">
+          <div class="page-toolbar">
+            <div class="page-label">Page {{ entry.num }} of {{ pageCount }}</div>
+            <div class="zoom-controls">
+              <button type="button" class="zoom-button" @click="zoomOut(entry)" title="Zoom out">&minus;</button>
+              <span class="zoom-level">{{ Math.round(entry.zoom * 100) }}%</span>
+              <button type="button" class="zoom-button" @click="zoomIn(entry)" title="Zoom in">+</button>
+            </div>
+          </div>
+          <div class="page-stage"
+               :class="{ active: editing && entry.num === currentPage, editable: editing && entry.num !== currentPage }"
+               :style="{ aspectRatio: entry.width + ' / ' + entry.height }"
+               @click="onPageStageClick(entry)">
+            <img class="page-image" :src="entry.image" alt="PDF page preview">
+            <div class="text-layer" v-if="editing && entry.num === currentPage">
+              <div v-for="box in boxes" :key="box.id"
+                   class="pdf-box" :class="{ changed: box.text !== box.originalText }"
+                   :style="boxStyle(box)">
+                <div class="pdf-text" contenteditable="plaintext-only" spellcheck="false"
+                     :data-box-id="box.id"
+                     @input="onBoxInput($event, box)">{{ box.text }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-if="loadingPreview" class="editor-help">Rendering&hellip;</div>
+      </div>
+    </div>
+
+    <div class="control-card">
+      <div class="control-title">Document</div>
+      <div class="file-name">{{ fileName }}</div>
+      <div class="divider"></div>
+
+      <button type="button" class="btn primary" @click="toggleEdit">{{ editing ? 'Close editor' : 'Edit PDF' }}</button>
+
+      <div v-if="editing" class="field" style="margin-top:14px;">
+        <label>Page to edit</label>
+        <input type="number" min="1" :max="pageCount" v-model.number="currentPage" @change="onPageChange">
+        <div class="page-count">of {{ pageCount }} page(s) &mdash; or click any page below</div>
+        <button type="button" class="btn primary" :disabled="!hasPendingEdits" @click="applyVisualEdits">Apply page changes</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <button type="button" class="btn download" @click="downloadPdf">Download PDF</button>
+      <button type="button" class="btn secondary" @click="clearDocument">Clear PDF</button>
+      <button type="button" class="btn done" @click="showDoneConfirm = true">Done</button>
+
+      <div v-if="statusMessage" class="success-message">{{ statusMessage }}</div>
+      <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+    </div>
+  </div>
+
+  <div v-if="showDoneConfirm" class="modal-overlay" @click.self="showDoneConfirm = false">
+    <div class="modal-card">
+      <h2 class="modal-title">Finish editing?</h2>
+      <p class="modal-body">
+        This will close your document and take you back to the start. Make sure you've
+        downloaded your PDF first &mdash; unsaved changes won't be kept.
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" @click="showDoneConfirm = false">Cancel</button>
+        <button type="button" class="btn primary" @click="confirmDone">Yes, I'm done</button>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@3.4.31/dist/vue.global.prod.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
+
+const { createApp } = Vue;
+const { PDFDocument, StandardFonts, rgb } = PDFLib;
+
+const FONT_NAMES = [
+  "Helvetica", "HelveticaBold", "HelveticaOblique", "HelveticaBoldOblique",
+  "TimesRoman", "TimesRomanBold", "TimesRomanItalic", "TimesRomanBoldItalic",
+  "Courier", "CourierBold", "CourierOblique", "CourierBoldOblique",
+];
+
+createApp({
+  data() {
+    return {
+      view: "welcome",
+
+      pdfLoaded: false,
+      fileName: "",
+      loadError: "",
+      errorMessage: "",
+      statusMessage: "",
+
+      pdfLibDoc: null,
+      pdfJsDoc: null,
+      fontCache: null,
+
+      pageCount: 0,
+      currentPage: 1,
+      pageWidth: 0,
+      pageHeight: 0,
+      scale: 2,
+      baseWidth: 480,
+      pageImages: [],
+      loadingPreview: false,
+
+      editing: false,
+      boxes: [],
+
+      showDoneConfirm: false,
+    };
+  },
+  computed: {
+    hasPendingEdits() {
+      return this.boxes.some((b) => b.text !== b.originalText);
+    },
+  },
+  methods: {
+    // ---------- loading ----------
+    onFileChange(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) this.loadFile(file);
+    },
+    onDrop(e) {
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) this.loadFile(file);
+    },
+    async loadFile(file) {
+      this.loadError = "";
+      const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      if (!isPdf) { this.loadError = "The selected file is not a valid PDF."; return; }
+      if (file.size > 50 * 1024 * 1024) { this.loadError = "File exceeds the 50MB limit."; return; }
+      try {
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        const header = new TextDecoder().decode(bytes.slice(0, 5));
+        if (header !== "%PDF-") { this.loadError = "The selected file is not a valid PDF."; return; }
+
+        let doc;
+        try {
+          doc = await PDFDocument.load(bytes);
+        } catch (err) {
+          if (String(err).toLowerCase().includes("encrypt")) {
+            this.loadError = "Password-protected PDFs are not supported.";
+          } else {
+            this.loadError = "Could not open PDF: " + (err.message || err);
+          }
+          return;
+        }
+        if (doc.isEncrypted) { this.loadError = "Password-protected PDFs are not supported."; return; }
+
+        this.pdfLibDoc = doc;
+        this.fontCache = null;
+        this.fileName = file.name;
+        this.currentPage = 1;
+        this.editing = false;
+        this.statusMessage = "";
+        this.errorMessage = "";
+        await this.refreshFromDoc();
+        this.pdfLoaded = true;
+      } catch (err) {
+        console.error(err);
+        this.loadError = "Could not open PDF: " + (err.message || err);
+      }
+    },
+    async refreshFromDoc() {
+      const bytes = await this.pdfLibDoc.save();
+      this.pdfJsDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
+      this.pageCount = this.pdfJsDoc.numPages;
+      if (this.currentPage > this.pageCount) this.currentPage = this.pageCount;
+      if (this.currentPage < 1) this.currentPage = 1;
+      await this.renderAllPages();
+    },
+
+    // ---------- rendering ----------
+    async renderAllPages() {
+      if (!this.pdfJsDoc) return;
+      this.loadingPreview = true;
+      try {
+        const images = [];
+        for (let num = 1; num <= this.pdfJsDoc.numPages; num++) {
+          const page = await this.pdfJsDoc.getPage(num);
+          const renderViewport = page.getViewport({ scale: this.scale });
+          const canvas = document.createElement("canvas");
+          canvas.width = renderViewport.width;
+          canvas.height = renderViewport.height;
+          const ctx = canvas.getContext("2d");
+          await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
+          const unscaled = page.getViewport({ scale: 1 });
+          const previous = this.pageImages.find((p) => p.num === num);
+          images.push({
+            num,
+            image: canvas.toDataURL("image/png"),
+            width: unscaled.width,
+            height: unscaled.height,
+            zoom: previous ? previous.zoom : 1,
+          });
+          if (num === this.currentPage) {
+            this.pageWidth = unscaled.width;
+            this.pageHeight = unscaled.height;
+          }
+        }
+        this.pageImages = images;
+
+        if (this.editing) {
+          const page = await this.pdfJsDoc.getPage(this.currentPage);
+          await this.extractBoxes(page);
+        } else {
+          this.boxes = [];
+        }
+      } catch (err) {
+        console.error(err);
+        this.errorMessage = "Could not render pages: " + (err.message || err);
+      } finally {
+        this.loadingPreview = false;
+      }
+    },
+    // Switch which page is open for editing without re-rendering every page image.
+    async switchEditPage(num) {
+      if (num < 1 || num > this.pageCount) return;
+      this.currentPage = num;
+      const entry = this.pageImages.find((p) => p.num === num);
+      if (entry) {
+        this.pageWidth = entry.width;
+        this.pageHeight = entry.height;
+      }
+      if (this.editing) {
+        const page = await this.pdfJsDoc.getPage(num);
+        await this.extractBoxes(page);
+      }
+    },
+    async extractBoxes(page) {
+      const content = await page.getTextContent();
+      const boxes = [];
+      let idx = 0;
+      for (const item of content.items) {
+        if (!item.str || !item.str.trim()) continue;
+        const style = content.styles[item.fontName] || {};
+        const family = String(style.fontFamily || "").toLowerCase();
+        const fontSize = Math.hypot(item.transform[2], item.transform[3]) || item.height || 12;
+        boxes.push({
+          id: `span-${idx++}`,
+          text: item.str,
+          originalText: item.str,
+          pdfX: item.transform[4],
+          pdfY: item.transform[5],
+          width: item.width || fontSize * item.str.length * 0.55,
+          size: fontSize,
+          color: "#000000",
+          bold: family.includes("bold"),
+          italic: family.includes("italic") || family.includes("oblique"),
+          mono: family.includes("mono") || family.includes("courier"),
+          serif: family.includes("serif") && !family.includes("sans"),
+        });
+      }
+      this.boxes = boxes;
+    },
+    boxStyle(box) {
+      const ascent = box.size * 0.8;
+      const descent = box.size * 0.28;
+      const top = this.pageHeight - box.pdfY - ascent;
+      const height = ascent + descent;
+      const family = box.mono ? "monospace" : box.serif ? "serif" : "sans-serif";
+      return {
+        left: (box.pdfX * 100) / this.pageWidth + "%",
+        top: (top * 100) / this.pageHeight + "%",
+        width: (Math.max(box.width, 6) * 100) / this.pageWidth + "%",
+        height: (Math.max(height, 6) * 100) / this.pageHeight + "%",
+        "--box-size": (box.size * 100) / this.pageHeight + "cqh",
+        "--box-color": box.color,
+        "--box-weight": box.bold ? "700" : "400",
+        "--box-style": box.italic ? "italic" : "normal",
+        "--box-family": family,
+      };
+    },
+
+    // ---------- editor interactions ----------
+    async toggleEdit() {
+      this.editing = !this.editing;
+      if (this.editing) {
+        await this.switchEditPage(this.currentPage);
+      } else {
+        this.boxes = [];
+      }
+    },
+    onPageChange() {
+      let target = this.currentPage;
+      if (target < 1) target = 1;
+      if (target > this.pageCount) target = this.pageCount;
+      this.switchEditPage(target);
+    },
+    zoomIn(entry) {
+      entry.zoom = Math.min(3, +(entry.zoom + 0.25).toFixed(2));
+    },
+    zoomOut(entry) {
+      entry.zoom = Math.max(0.4, +(entry.zoom - 0.25).toFixed(2));
+    },
+    onBoxInput(e, box) {
+      box.text = e.target.innerText.replace(/\r/g, "");
+    },
+    // Clicking a page thumbnail that isn't the active editing page switches to it.
+    onPageStageClick(entry) {
+      if (!this.editing) return;
+      if (entry.num !== this.currentPage) this.switchEditPage(entry.num);
+    },
+
+    // ---------- pdf-lib helpers ----------
+    async getFonts() {
+      if (this.fontCache) return this.fontCache;
+      const cache = {};
+      for (const name of FONT_NAMES) {
+        cache[name] = await this.pdfLibDoc.embedFont(StandardFonts[name]);
+      }
+      this.fontCache = cache;
+      return cache;
+    },
+    pickFont(fonts, bold, italic, mono, serif) {
+      if (mono) return fonts[bold && italic ? "CourierBoldOblique" : bold ? "CourierBold" : italic ? "CourierOblique" : "Courier"];
+      if (serif) return fonts[bold && italic ? "TimesRomanBoldItalic" : bold ? "TimesRomanBold" : italic ? "TimesRomanItalic" : "TimesRoman"];
+      return fonts[bold && italic ? "HelveticaBoldOblique" : bold ? "HelveticaBold" : italic ? "HelveticaOblique" : "Helvetica"];
+    },
+    hexToRgb(hex) {
+      const m = /^#?([0-9a-f]{6})$/i.exec(hex || "#000000");
+      const v = m ? m[1] : "000000";
+      return {
+        r: parseInt(v.slice(0, 2), 16) / 255,
+        g: parseInt(v.slice(2, 4), 16) / 255,
+        b: parseInt(v.slice(4, 6), 16) / 255,
+      };
+    },
+    async drawBoxText(pdfPage, box, fonts) {
+      const font = this.pickFont(fonts, box.bold, box.italic, box.mono, box.serif);
+      const { r, g, b } = this.hexToRgb(box.color);
+      pdfPage.drawText(box.text, { x: box.pdfX, y: box.pdfY, size: box.size, font, color: rgb(r, g, b) });
+    },
+    async whiteOutAndDraw(pdfPage, box, newText, fonts) {
+      const ascent = box.size * 0.82;
+      const descent = box.size * 0.28;
+      const width = Math.max(box.width, newText.length * box.size * 0.62);
+      pdfPage.drawRectangle({
+        x: box.pdfX - 1,
+        y: box.pdfY - descent,
+        width: width + 4,
+        height: ascent + descent + 2,
+        color: rgb(1, 1, 1),
+      });
+      await this.drawBoxText(pdfPage, { ...box, text: newText }, fonts);
+    },
+
+    // ---------- actions ----------
+    async applyVisualEdits() {
+      this.errorMessage = "";
+      this.statusMessage = "";
+      const changed = this.boxes.filter((b) => b.text !== b.originalText);
+      if (!changed.length) {
+        this.errorMessage = "No text was changed.";
+        return;
+      }
+      try {
+        const pdfPage = this.pdfLibDoc.getPage(this.currentPage - 1);
+        const fonts = await this.getFonts();
+        for (const box of changed) await this.whiteOutAndDraw(pdfPage, box, box.text, fonts);
+        await this.refreshFromDoc();
+        this.statusMessage = `Saved ${changed.length} text change(s) in memory. The download is now updated.`;
+      } catch (err) {
+        console.error(err);
+        this.errorMessage = "Could not apply edits: " + (err.message || err);
+      }
+    },
+    async downloadPdf() {
+      try {
+        const bytes = await this.pdfLibDoc.save();
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const stem = (this.fileName || "document.pdf").replace(/\.pdf$/i, "");
+        a.href = url;
+        a.download = `edited_${stem}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      } catch (err) {
+        console.error(err);
+        this.errorMessage = "Could not prepare download: " + (err.message || err);
+      }
+    },
+    clearDocument() {
+      this.pdfLoaded = false;
+      this.pdfLibDoc = null;
+      this.pdfJsDoc = null;
+      this.fontCache = null;
+      this.fileName = "";
+      this.boxes = [];
+      this.pageImages = [];
+      this.editing = false;
+      this.statusMessage = "";
+      this.errorMessage = "";
+      this.loadError = "";
+      this.currentPage = 1;
+      this.pageCount = 0;
+      if (this.$refs.fileInput) this.$refs.fileInput.value = "";
+    },
+    confirmDone() {
+      this.showDoneConfirm = false;
+      this.clearDocument();
+      this.view = "welcome";
+    },
+  },
+}).mount("#app");
+</script>
+</body>
+</html>
