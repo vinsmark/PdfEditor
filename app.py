@@ -365,7 +365,7 @@ st.markdown(
         color: var(--text);
     }
 
-    #MainMenu, [data-testid="stToolbar"], [data-testid="stDecoration"],
+    #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"],
     [data-testid="stStatusWidget"], .stDeployButton, footer {
         display: none !important;
     }
